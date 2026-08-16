@@ -1,6 +1,12 @@
 gr-osmosdr - generic gnuradio SDR I/O block
 ===========================================
 
+**This fork adds working `set_biast()`/`get_biast()` support for the
+soapy backend** (device strings using `soapy=`, e.g.
+`driver=airspy,serial=...,soapy=0`) -- previously a silent no-op for
+that backend. See [CHANGES.md](CHANGES.md) for details. Base:
+[racerxdl/gr-osmosdr](https://github.com/racerxdl/gr-osmosdr).
+
 While originally being developed for the
 [OsmoSDR](https://osmocom.org/projects/osmosdr/wiki) hardware, this
 block has become a generic SDR I/O block for a variety of SDR

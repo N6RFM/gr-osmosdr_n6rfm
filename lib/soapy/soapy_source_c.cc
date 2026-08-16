@@ -109,6 +109,16 @@ int soapy_source_c::work( int noutput_items,
     return ret;
 }
 
+void soapy_source_c::set_biast( bool enabled )
+{
+    _device->writeSetting("biastee", enabled ? "true" : "false");
+}
+
+bool soapy_source_c::get_biast()
+{
+    return _device->readSetting("biastee") == "true";
+}
+
 std::vector<std::string> soapy_source_c::get_devices()
 {
     std::vector<std::string> result;

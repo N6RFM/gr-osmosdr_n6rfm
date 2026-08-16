@@ -7,3 +7,7 @@ SDRplay Ltd.
 Pavel Demin
 Marcus Müller
 Lukas Lao Beyer
+
+This fork (soapy backend bias-tee support):
+N6RFM
+Claude (Anthropic) -- pair-programmed the fix and documentation with N6RFM

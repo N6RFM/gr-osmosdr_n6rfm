@@ -131,6 +131,15 @@ void set_time_now(const ::osmosdr::time_spec_t &time_spec,
 void set_time_next_pps(const ::osmosdr::time_spec_t &time_spec);
 void set_time_unknown_pps(const ::osmosdr::time_spec_t &time_spec);
 
+// Bias tee support. source_iface's default implementation is a no-op
+// stub (prints "NOT IMPLEMENTED" and returns false) -- this backend
+// previously fell through to that default silently, so set_biast()
+// had no effect at all when using driver=...,soapy=0 device strings.
+// Forwards to SoapySDR::Device::writeSetting("biastee", ...), the
+// generic settings mechanism SoapyAirspy (among other drivers) uses.
+void set_biast( bool enabled );
+bool get_biast();
+
 private:
     SoapySDR::Device *_device;
     SoapySDR::Stream *_stream;
