@@ -40,7 +40,7 @@ parameters:
   hide: ${'$'}{ 'none' if args else 'part'}
 % if sourk == 'source':
 - id: biast
-  label: 'Bias Tee'
+  label: 'Bias Tee (True=On)'
   dtype: bool
   default: False
   options: [False, True]
@@ -276,12 +276,22 @@ documentation: |-
   This functionality depends on http://cgit.osmocom.org/cgit/gr-iqbal/
 
   Gain Mode:
-  Chooses between the manual (default) and automatic gain mode where appropriate.
-  To allow manual control of RF/IF/BB gain stages, manual gain mode must be configured.
-  Automatic gain mode support varies by device/backend -- e.g. RTL-SDR
-  supports it natively, and SoapySDR-backed devices (soapy=... device
-  strings) support it if the underlying driver implements
+  This is a True/False field, but the closed dropdown always displays
+  the raw value (a GRC quirk for boolean parameters) rather than the
+  "Manual"/"Automatic" label -- so to be explicit: True = Automatic
+  (hardware AGC), False = Manual (fixed gain at whatever RF/IF/BB Gain
+  you set below).
+
+  To allow manual control of RF/IF/BB gain stages, this must be set to
+  False. Automatic gain mode support varies by device/backend -- e.g.
+  RTL-SDR supports it natively, and SoapySDR-backed devices (soapy=...
+  device strings) support it if the underlying driver implements
   SoapySDR::Device::setGainMode() (Airspy via SoapyAirspy does).
+
+  For Airspy specifically: hardware AGC only covers the LNA and Mixer
+  gain stages, not VGA -- so with this set to True, RF/IF Gain below
+  are ignored (the hardware picks those continuously), but BB Gain
+  (VGA) still applies exactly as set.
 
   % endif
   RF Gain:
@@ -347,7 +357,7 @@ PARAMS_TMPL = """
   option_labels: [Off, Manual, Automatic]
   hide: ${'$'}{'none' if (nchan > ${n}) else 'all'}
 - id: gain_mode${n}
-  label: 'Ch${n}: Gain Mode'
+  label: 'Ch${n}: Gain Mode (True=Auto)'
   dtype: bool
   default: False
   options: [False, True]
