@@ -8,6 +8,7 @@ Pavel Demin
 Marcus Müller
 Lukas Lao Beyer
 
-This fork (soapy backend bias-tee support):
+This fork (soapy backend bias-tee support, generic settings passthrough,
+overflow counter, GRC bias-tee/gain-table controls, C++17 build fix):
 N6RFM
-Claude (Anthropic) -- pair-programmed the fix and documentation with N6RFM
+Claude (Anthropic) -- pair-programmed the fixes and documentation with N6RFM

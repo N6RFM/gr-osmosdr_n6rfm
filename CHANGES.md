@@ -1,4 +1,4 @@
-# Changes in this fork (N6RFM/gr-osmosdr_racerdxl)
+# Changes in this fork (N6RFM/gr-osmocom_n6rfm)
 
 Base: [racerxdl/gr-osmosdr](https://github.com/racerxdl/gr-osmosdr), synced with upstream.
 
