@@ -52,6 +52,12 @@ driver=airspy,serial=744c60c8218e3e4f,soapy=0
 Three pieces, three genuinely separate layers -- worth knowing which
 is which, since no single tool documents all of them together:
 
+| Term | What it actually is | Where it's handled |
+|---|---|---|
+| `driver=airspy` | SoapySDR's own universal driver-selection key | SoapySDR core's registry matching |
+| `serial=744c60c8218e3e4f` | SoapyAirspy-specific construction arg | SoapyAirspy's constructor directly (see [SoapyAirspy_n6rfm](https://github.com/N6RFM/SoapyAirspy_n6rfm#using)) |
+| `soapy=0` | gr-osmosdr's own routing switch -- only the *key's presence* matters, the value is ignored | **This repo**, `lib/source_impl.cc` |
+
 - **`driver=airspy`** and **`serial=744c60c8218e3e4f`** -- construction
   arguments consumed by SoapySDR/SoapyAirspy itself, before this
   block or gr-osmosdr are involved at all. `serial=` matters
@@ -72,6 +78,14 @@ is which, since no single tool documents all of them together:
   whole string -- `soapy=0` included -- gets forwarded to
   `SoapySDR::Device::make()`, which just ignores the `soapy` key
   since it doesn't recognize it.
+
+  **The `0` is not universal and not a device selector.** You'll see
+  `soapy=1`, `soapy=2`, etc. in device strings this project
+  auto-generates when it enumerates multiple available devices for a
+  picker/dropdown (`get_devices()` in `soapy_source_c.cc` assigns
+  sequential indices purely for that listing). When you're hand-typing
+  your own device string, any value works identically -- `serial=` is
+  what actually picks the physical unit, not this number.
 
 While originally being developed for the
 [OsmoSDR](https://osmocom.org/projects/osmosdr/wiki) hardware, this
