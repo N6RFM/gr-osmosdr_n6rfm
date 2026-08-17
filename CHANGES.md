@@ -113,3 +113,28 @@ the correctly quoted `'sensitivity'`, and that the resulting script
 runs past that line without error.
 
 Files changed: `grc/gen_osmosdr_blocks.py`
+
+## Added: `rx_overflow` tag emission in the soapy backend
+
+`soapy_source_c::work()` already detected `SOAPY_SDR_OVERFLOW` (see
+the generic settings passthrough above, which exposes
+`overflow_count`) but had no way to mark *where in the sample stream*
+a drop happened -- only a running total, readable after the fact.
+
+Now, on every `SOAPY_SDR_OVERFLOW`, `work()` calls `add_item_tag()`
+with key `rx_overflow` at the exact sample offset where the gap
+occurs (`nitems_written(0)`, correct specifically because this
+`work()` call produces zero samples). Any ordinary downstream block
+can now detect drops in real time just by reading tags on its own
+input port, mid-flowgraph -- no polling, no reference to this source
+block needed.
+
+This is what [gr-overflow-monitor](https://github.com/N6RFM/gr-overflow-monitor)'s
+`Overflow Tag Monitor` block reads. It only has anything to detect
+because [SoapyAirspy_n6rfm](https://github.com/N6RFM/SoapyAirspy_n6rfm)
+correctly signals `SOAPY_SDR_OVERFLOW` from `readStream()` in the
+first place (see that repo's `CHANGES.md`, "Added: SOAPY_SDR_OVERFLOW
+signaling") -- this tag emission has nothing to detect against a
+driver that silently drops samples without reporting it.
+
+Files changed: `lib/soapy/soapy_source_c.cc`

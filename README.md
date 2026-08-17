@@ -4,7 +4,12 @@ gr-osmosdr - generic gnuradio SDR I/O block
 **This fork adds several improvements to the soapy backend**
 (device strings using `soapy=`, e.g. `driver=airspy,serial=...,soapy=0`),
 originally motivated by getting bias tee working reliably with
-[N6RFM/SoapyAirspy](https://github.com/N6RFM/SoapyAirspy):
+[N6RFM/SoapyAirspy_n6rfm](https://github.com/N6RFM/SoapyAirspy_n6rfm) --
+most of what's below only does anything useful paired with that
+driver fork specifically (stock SoapyAirspy doesn't report
+`SOAPY_SDR_OVERFLOW`, so `get_overflow_count()`/`rx_overflow` tags
+here have nothing to detect; stock `gains=linearity/sensitivity`
+doesn't even exist upstream -- see that repo's own `CHANGES.md`):
 
 - **Bias tee actually works.** `set_biast()`/`get_biast()` were
   previously a silent no-op for this backend -- calling them printed
@@ -15,6 +20,13 @@ originally motivated by getting bias tee working reliably with
   dedicated wrapper method needing to exist for each one.
 - **`get_overflow_count()`** -- overflow events were previously
   silently discarded with zero visibility; now countable.
+- **`rx_overflow` stream tags** -- every `SOAPY_SDR_OVERFLOW` is now
+  also stamped directly into the sample stream at the exact offset it
+  occurred, so any ordinary downstream block can detect drops live
+  just by reading its own input tags -- no polling, no cross-block
+  reference needed. Read by
+  [gr-overflow-monitor](https://github.com/N6RFM/gr-overflow-monitor)'s
+  `Overflow Tag Monitor` block.
 - **GRC block usability**: a live-toggleable **Bias Tee** checkbox and
   a **Gain Table (Soapy)** dropdown (`manual`/`linearity`/`sensitivity`)
   on the `osmocom Source` block, replacing hand-typed Device Arguments
