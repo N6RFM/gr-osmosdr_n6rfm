@@ -2,14 +2,19 @@ gr-osmosdr - generic gnuradio SDR I/O block
 ===========================================
 
 **This fork adds several improvements to the soapy backend**
-(device strings using `soapy=`, e.g. `driver=airspy,serial=...,soapy=0`),
-originally motivated by getting bias tee working reliably with
-[N6RFM/SoapyAirspy_n6rfm](https://github.com/N6RFM/SoapyAirspy_n6rfm) --
-most of what's below only does anything useful paired with that
-driver fork specifically (stock SoapyAirspy doesn't report
+(SoapySDR integration via `soapy=` device strings, e.g.
+`driver=airspy,serial=...,soapy=0`) -- the soapy backend itself
+(`soapy_source_c.cc`, the whole `soapy=` mechanism) is original
+[osmocom/gr-osmosdr](https://github.com/osmocom/gr-osmosdr)
+functionality, present long before this fork existed. What's
+actually new here (originally motivated by getting bias tee working
+reliably with
+[N6RFM/SoapyAirspy_n6rfm](https://github.com/N6RFM/SoapyAirspy_n6rfm))
+is below -- most of it only does anything useful paired with that
+driver fork specifically: stock SoapyAirspy doesn't report
 `SOAPY_SDR_OVERFLOW`, so `get_overflow_count()`/`rx_overflow` tags
-here have nothing to detect; stock `gains=linearity/sensitivity`
-doesn't even exist upstream -- see that repo's own `CHANGES.md`):
+here have nothing to detect, and stock `gains=linearity/sensitivity`
+doesn't even exist upstream (see that repo's own `CHANGES.md`):
 
 - **Bias tee actually works.** `set_biast()`/`get_biast()` were
   previously a silent no-op for this backend -- calling them printed
