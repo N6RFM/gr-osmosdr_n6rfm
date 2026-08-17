@@ -107,6 +107,18 @@ int soapy_source_c::work( int noutput_items,
 
     if (ret == SOAPY_SDR_OVERFLOW) {
         _overflow_count++;
+        // Mark the discontinuity directly in the sample stream, using
+        // the standard GNU Radio tag convention, so any ordinary
+        // downstream block can detect it just by reading tags on its
+        // own input port -- no cross-block reference to this source
+        // needed. nitems_written(0) is correct here specifically
+        // because this work() call produces zero samples (see the
+        // `return 0` below): the tag lands exactly at the sample
+        // index where the next successfully-read block will begin,
+        // i.e. right at the boundary of the gap.
+        add_item_tag(0, nitems_written(0),
+                     pmt::intern("rx_overflow"), pmt::PMT_T,
+                     pmt::intern(alias()));
     }
 
     if (ret < 0) return 0; //call again
