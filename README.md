@@ -1,10 +1,30 @@
 gr-osmosdr - generic gnuradio SDR I/O block
 ===========================================
 
-**This fork adds working `set_biast()`/`get_biast()` support for the
-soapy backend** (device strings using `soapy=`, e.g.
-`driver=airspy,serial=...,soapy=0`) -- previously a silent no-op for
-that backend. See [CHANGES.md](CHANGES.md) for details. Base:
+**This fork adds several improvements to the soapy backend**
+(device strings using `soapy=`, e.g. `driver=airspy,serial=...,soapy=0`),
+originally motivated by getting bias tee working reliably with
+[N6RFM/SoapyAirspy](https://github.com/N6RFM/SoapyAirspy):
+
+- **Bias tee actually works.** `set_biast()`/`get_biast()` were
+  previously a silent no-op for this backend -- calling them printed
+  a debug message and did nothing to the hardware.
+- **Generic `set_setting()`/`get_setting()`** -- reach any
+  driver-specific SoapySDR setting from Python (e.g. SoapyAirspy's
+  `gains`, `bufsize`, `overflow_count`, `high_watermark`) without a
+  dedicated wrapper method needing to exist for each one.
+- **`get_overflow_count()`** -- overflow events were previously
+  silently discarded with zero visibility; now countable.
+- **GRC block usability**: a live-toggleable **Bias Tee** checkbox and
+  a **Gain Table (Soapy)** dropdown (`manual`/`linearity`/`sensitivity`)
+  on the `osmocom Source` block, replacing hand-typed Device Arguments
+  syntax.
+- **C++17** required (was C++11), for compatibility with modern
+  GNU Radio (3.10+) / Boost.
+- Fixed stale documentation claiming automatic gain mode is
+  RTL-SDR-only.
+
+Full details, file-by-file, in [CHANGES.md](CHANGES.md). Base:
 [racerxdl/gr-osmosdr](https://github.com/racerxdl/gr-osmosdr).
 
 While originally being developed for the
@@ -36,56 +56,43 @@ your application(s) independent of the underlying radio hardware.
 Homepage + Documentation
 ------------------------
 
-For installation and usage guidelines please read the documentation available
-at <https://osmocom.org/projects/gr-osmosdr/wiki>
+For general osmocom/gr-osmosdr background, see
+<https://osmocom.org/projects/gr-osmosdr/wiki> -- note that page
+describes the upstream project, not this fork's changes (see
+[CHANGES.md](CHANGES.md) for those).
 
-For the impatient :) a short excerpt:
+Requirements: GNU Radio 3.10+ and a C++17 compiler (see
+[CHANGES.md](CHANGES.md) for why C++17 is required). Built and tested
+on Ubuntu 24 / Linux Mint 22 with GNU Radio 3.10.9.
 
-The Gnu Radio block requires a recent gnuradio (>= v3.7) to be installed.
-
-Before building the block you have to make sure that all the dependencies
-(see list of supported devices above) you are intend to work with are
-properly installed. The build system of gr-osmosdr will recognize them and
-enable specific source/sink components thereafter.
-
-Please note: prior pulling a new version from git and compiling it,
-please do a "make uninstall" first to properly remove the previous version.
+Before building, make sure the dependencies for whichever devices you
+actually use (see list above) are installed -- the build system
+detects them automatically and enables the matching source/sink
+components.
 
 Building with cmake:
 
-git clone https://github.com/racerxdl/gr-osmosdr.git
-cd gr-osmosdr/
-mkdir build
-cd build/
-cmake ../
-make
-sudo make install
-sudo ldconfig
+    git clone https://github.com/N6RFM/gr-osmocom_n6rfm.git
+    cd gr-osmocom_n6rfm/
+    mkdir build
+    cd build/
+    cmake ..
+    make
+    sudo make install
+    sudo ldconfig
+
+If you're updating an existing install, `sudo make uninstall` from an
+old build directory first will cleanly remove it.
 
 NOTE: The osmocom blocks will appear under 'Sources' and 'Sinks' categories
 in GRC menu.
 
-Mailing List
-------------
+Issues
+------
 
-Discussions related to libosmocore are happening on the
-osmocom-sdr@lists.osmocom.org mailing list, please see
-<https://lists.osmocom.org/mailman/listinfo/osmocom-sdr> for subscription
-options and the list archive.
+For bugs or questions specific to this fork's changes, open an issue
+at <https://github.com/N6RFM/gr-osmocom_n6rfm/issues>.
 
-Please observe the [Osmocom Mailing List
-Rules](https://osmocom.org/projects/cellular-infrastructure/wiki/Mailing_List_Rules)
-when posting.
-
-
-Issue tracker
--------------
-
-We are using the Osmocom redmine at <https://osmocom.org/projects/gr-osmosdr/issues>
-
-Contributing
-------------
-
-We maintain our source code in a self-hosted instance of gitea at
-<https://gitea.osmocom.org/sdr/gr-osmosdr>. You can send pull requests there, or send
-patches the old-fashioned way (git send-email) to the above-mentioned mailing list.
+For anything about the underlying osmocom/gr-osmosdr project itself,
+see the upstream mailing list, issue tracker, and contribution
+guidelines at <https://osmocom.org/projects/gr-osmosdr/wiki>.
