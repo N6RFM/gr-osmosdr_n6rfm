@@ -7,6 +7,7 @@ SDRplay Ltd.
 Pavel Demin
 Marcus Müller
 Lukas Lao Beyer
+Lucas Teske (racerxdl) <https://github.com/racerxdl> -- added SpyServer support
 
 This fork (soapy backend bias-tee support, generic settings passthrough,
 overflow counter, GRC bias-tee/gain-table controls, C++17 build fix):

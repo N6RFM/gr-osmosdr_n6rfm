@@ -25,7 +25,9 @@ originally motivated by getting bias tee working reliably with
   RTL-SDR-only.
 
 Full details, file-by-file, in [CHANGES.md](CHANGES.md). Base:
-[racerxdl/gr-osmosdr](https://github.com/racerxdl/gr-osmosdr).
+[racerxdl/gr-osmosdr](https://github.com/racerxdl/gr-osmosdr) (Lucas
+Teske), which itself added SpyServer support on top of upstream
+osmocom/gr-osmosdr.
 
 While originally being developed for the
 [OsmoSDR](https://osmocom.org/projects/osmosdr/wiki) hardware, this
