@@ -6,9 +6,10 @@ gr-osmosdr - generic gnuradio SDR I/O block
 `driver=airspy,serial=...,soapy=0`) -- the soapy backend itself
 (`soapy_source_c.cc`, the whole `soapy=` mechanism) is original
 [osmocom/gr-osmosdr](https://github.com/osmocom/gr-osmosdr)
-functionality, present long before this fork existed. What's
-actually new here (originally motivated by getting bias tee working
-reliably with
+functionality, present long before this fork existed.
+
+What's actually new here (originally motivated by getting bias tee
+working reliably with
 [N6RFM/SoapyAirspy_n6rfm](https://github.com/N6RFM/SoapyAirspy_n6rfm))
 is below -- most of it only does anything useful paired with that
 driver fork specifically: stock SoapyAirspy doesn't report
