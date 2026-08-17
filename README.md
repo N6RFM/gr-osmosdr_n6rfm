@@ -94,7 +94,3 @@ Issues
 
 For bugs or questions specific to this fork's changes, open an issue
 at <https://github.com/N6RFM/gr-osmocom_n6rfm/issues>.
-
-For anything about the underlying osmocom/gr-osmosdr project itself,
-see the upstream mailing list, issue tracker, and contribution
-guidelines at <https://osmocom.org/projects/gr-osmosdr/wiki>.
