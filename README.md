@@ -29,6 +29,38 @@ Full details, file-by-file, in [CHANGES.md](CHANGES.md). Base:
 Teske), which itself added SpyServer support on top of upstream
 osmocom/gr-osmosdr.
 
+## Device Arguments Explained
+
+A working example for an Airspy through the soapy backend:
+
+```
+driver=airspy,serial=744c60c8218e3e4f,soapy=0
+```
+
+Three pieces, three genuinely separate layers -- worth knowing which
+is which, since no single tool documents all of them together:
+
+- **`driver=airspy`** and **`serial=744c60c8218e3e4f`** -- construction
+  arguments consumed by SoapySDR/SoapyAirspy itself, before this
+  block or gr-osmosdr are involved at all. `serial=` matters
+  specifically if you have more than one Airspy connected -- without
+  it, SoapySDR silently opens whichever matching device enumerates
+  first, not necessarily the one you meant. Full explanation
+  (including why `serial=744c60c8218e3e4f` and
+  `serial=0x744c60c8218e3e4f` are equivalent) in
+  [SoapyAirspy_n6rfm's README](https://github.com/N6RFM/SoapyAirspy_n6rfm#using).
+
+- **`soapy=0`** -- this one's entirely ours (this repo), and has
+  nothing to do with SoapySDR at all. It's a routing switch: `lib/source_impl.cc`
+  just checks `dict.count("soapy")` -- the value (`0` here) is
+  irrelevant, only whether the *key* is present. Its presence tells
+  this block to use the generic SoapySDR backend (`soapy_source_c`)
+  instead of one of the other native backends (`rtl=`, `hackrf=`,
+  the native `airspy=`, etc). Once that routing decision is made, the
+  whole string -- `soapy=0` included -- gets forwarded to
+  `SoapySDR::Device::make()`, which just ignores the `soapy` key
+  since it doesn't recognize it.
+
 While originally being developed for the
 [OsmoSDR](https://osmocom.org/projects/osmosdr/wiki) hardware, this
 block has become a generic SDR I/O block for a variety of SDR
