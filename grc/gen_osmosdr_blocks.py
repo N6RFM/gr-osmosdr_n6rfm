@@ -288,10 +288,14 @@ documentation: |-
   device strings) support it if the underlying driver implements
   SoapySDR::Device::setGainMode() (Airspy via SoapyAirspy does).
 
-  For Airspy specifically: hardware AGC only covers the LNA and Mixer
-  gain stages, not VGA -- so with this set to True, RF/IF Gain below
-  are ignored (the hardware picks those continuously), but BB Gain
-  (VGA) still applies exactly as set.
+  For Airspy specifically: True enables real hardware AGC for the LNA
+  and Mixer gain stages only (confirmed from libairspy source: it
+  calls airspy_set_lna_agc()/airspy_set_mixer_agc()) -- VGA gain is
+  never touched by this setting. The RF/IF Gain fields below are raw,
+  unconditional register writes with no AGC awareness in the driver;
+  once AGC is running, don't trust those numbers to reflect the
+  LNA/Mixer gain actually in effect. BB Gain (VGA) is the one value
+  guaranteed to be exactly what you set, regardless of this setting.
 
   % endif
   RF Gain:
