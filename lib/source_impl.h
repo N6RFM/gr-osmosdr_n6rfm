@@ -93,6 +93,9 @@ public:
 
   void set_biast( bool enabled );
   bool get_biast();
+  void set_setting( const std::string &key, const std::string &value );
+  std::string get_setting( const std::string &key );
+  unsigned long long get_overflow_count();
 
 private:
   std::vector< source_iface * > _devs;

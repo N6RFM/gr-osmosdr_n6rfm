@@ -1012,3 +1012,33 @@ bool source_impl::get_biast() {
   }
   return false;
 }
+
+void source_impl::set_setting( const std::string &key, const std::string &value ) {
+  for (source_iface *dev : _devs)
+  {
+    dev->set_setting(key, value);
+  }
+}
+
+std::string source_impl::get_setting( const std::string &key ) {
+  // With multiple devices, return the first non-empty result found --
+  // there's no generally meaningful way to combine arbitrary string
+  // settings across devices the way get_biast() can OR booleans.
+  for (source_iface *dev : _devs)
+  {
+    std::string value = dev->get_setting(key);
+    if (!value.empty()) {
+      return value;
+    }
+  }
+  return "";
+}
+
+unsigned long long source_impl::get_overflow_count() {
+  unsigned long long total = 0;
+  for (source_iface *dev : _devs)
+  {
+    total += dev->get_overflow_count();
+  }
+  return total;
+}

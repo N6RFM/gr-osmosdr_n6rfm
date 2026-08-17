@@ -411,6 +411,32 @@ public:
    */
   virtual bool get_biast() { return false; }
 
+  /*!
+   * Generic settings passthrough for backends that support arbitrary
+   * driver-specific settings beyond this interface's typed methods
+   * (e.g. SoapySDR::Device::writeSetting()/readSetting(), used by
+   * SoapyAirspy for "gains", "bitpack", "bufsize", "overflow_count",
+   * etc). Backends without an equivalent mechanism silently no-op /
+   * return an empty string by default.
+   * \param key the setting name
+   * \param value the value to write
+   */
+  virtual void set_setting( const std::string &key, const std::string &value ) { }
+
+  /*!
+   * Reads back a generic setting. Returns an empty string if the
+   * backend has no such setting or does not support this mechanism.
+   * \param key the setting name
+   */
+  virtual std::string get_setting( const std::string &key ) { return ""; }
+
+  /*!
+   * Number of times readStream() (or equivalent) reported an
+   * overflow -- samples the backend was unable to deliver in time.
+   * Backends without a way to detect this return 0.
+   */
+  virtual unsigned long long get_overflow_count() { return 0; }
+
 };
 
 #endif // OSMOSDR_SOURCE_IFACE_H

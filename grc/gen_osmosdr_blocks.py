@@ -38,6 +38,22 @@ parameters:
   dtype: string
   default: '""'
   hide: ${'$'}{ 'none' if args else 'part'}
+% if sourk == 'source':
+- id: biast
+  label: 'Bias Tee'
+  dtype: bool
+  default: False
+  options: [False, True]
+  option_labels: [Off, On]
+  hide: part
+- id: gain_table
+  label: 'Gain Table (Soapy)'
+  dtype: string
+  options: ['', manual, linearity, sensitivity]
+  option_labels: [Unset, Manual, Linearity, Sensitivity]
+  default: ''
+  hide: ${'$'}{'none' if gain_table else 'part'}
+% endif
 - id: sync
   label: Sync
   dtype: enum
@@ -118,6 +134,12 @@ templates:
     self.${'$'}{id}.set_time_now(osmosdr.time_spec_t(time.time()), osmosdr.ALL_MBOARDS)
     ${'%'} endif
     self.${'$'}{id}.set_sample_rate(${'$'}{sample_rate})
+    % if sourk == 'source':
+    self.${'$'}{id}.set_biast(${'$'}{biast})
+    ${'%'} if context.get('gain_table')():
+    self.${'$'}{id}.set_setting("gains", ${'$'}{gain_table})
+    ${'%'} endif
+    % endif
     % for n in range(max_nchan):
     ${'%'} if context.get('nchan')() > ${n}:
     self.${'$'}{id}.set_center_freq(${'$'}{${'freq' + str(n)}}, ${n})
@@ -136,6 +158,9 @@ templates:
     % endfor
   callbacks:
     - set_sample_rate(${'$'}{sample_rate})
+    % if sourk == 'source':
+    - set_biast(${'$'}{biast})
+    % endif
     % for n in range(max_nchan):
     - set_center_freq(${'$'}{${'freq' + str(n)}}, ${n})
     - set_freq_corr(${'$'}{${'corr' + str(n)}}, ${n})
@@ -253,7 +278,10 @@ documentation: |-
   Gain Mode:
   Chooses between the manual (default) and automatic gain mode where appropriate.
   To allow manual control of RF/IF/BB gain stages, manual gain mode must be configured.
-  Currently, only RTL-SDR devices support automatic gain mode.
+  Automatic gain mode support varies by device/backend -- e.g. RTL-SDR
+  supports it natively, and SoapySDR-backed devices (soapy=... device
+  strings) support it if the underlying driver implements
+  SoapySDR::Device::setGainMode() (Airspy via SoapyAirspy does).
 
   % endif
   RF Gain:

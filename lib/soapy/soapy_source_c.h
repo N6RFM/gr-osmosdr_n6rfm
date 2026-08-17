@@ -140,10 +140,23 @@ void set_time_unknown_pps(const ::osmosdr::time_spec_t &time_spec);
 void set_biast( bool enabled );
 bool get_biast();
 
+// Generic passthrough to SoapySDR::Device::writeSetting()/
+// readSetting(), for driver-specific settings with no dedicated
+// typed method on this interface (e.g. SoapyAirspy's "gains",
+// "bitpack", "bufsize", "overflow_count", "high_watermark").
+void set_setting( const std::string &key, const std::string &value );
+std::string get_setting( const std::string &key );
+
+// Count of SOAPY_SDR_OVERFLOW events observed in work(). Previously
+// overflows were silently retried once and then discarded with zero
+// visibility to the flowgraph.
+unsigned long long get_overflow_count();
+
 private:
     SoapySDR::Device *_device;
     SoapySDR::Stream *_stream;
     size_t _nchan;
+    unsigned long long _overflow_count = 0;
 };
 
 #endif /* INCLUDED_SOAPY_SOURCE_C_H */

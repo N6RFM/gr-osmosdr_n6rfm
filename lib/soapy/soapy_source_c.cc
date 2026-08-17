@@ -105,8 +105,17 @@ int soapy_source_c::work( int noutput_items,
             noutput_items, flags, timeNs);
     } while (retries-- && (ret == SOAPY_SDR_OVERFLOW));
 
+    if (ret == SOAPY_SDR_OVERFLOW) {
+        _overflow_count++;
+    }
+
     if (ret < 0) return 0; //call again
     return ret;
+}
+
+unsigned long long soapy_source_c::get_overflow_count()
+{
+    return _overflow_count;
 }
 
 void soapy_source_c::set_biast( bool enabled )
@@ -117,6 +126,16 @@ void soapy_source_c::set_biast( bool enabled )
 bool soapy_source_c::get_biast()
 {
     return _device->readSetting("biastee") == "true";
+}
+
+void soapy_source_c::set_setting( const std::string &key, const std::string &value )
+{
+    _device->writeSetting(key, value);
+}
+
+std::string soapy_source_c::get_setting( const std::string &key )
+{
+    return _device->readSetting(key);
 }
 
 std::vector<std::string> soapy_source_c::get_devices()

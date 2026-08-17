@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(1)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(source.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(8eed9451c1834118c28118da45bd358e)                     */
+/* BINDTOOL_HEADER_FILE_HASH(1bcf01b64b1430d040f11eadb192cfe8)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -336,6 +336,27 @@ void bind_source(py::module& m)
 
         .def("get_biast",&source::get_biast,
             D(source,get_biast)
+        )
+
+
+        .def("set_setting",&source::set_setting,
+            py::arg("key"),
+            py::arg("value"),
+            "Generic settings passthrough (e.g. SoapySDR writeSetting()). "
+            "Backends without support for a given key silently ignore it."
+        )
+
+
+        .def("get_setting",&source::get_setting,
+            py::arg("key"),
+            "Generic settings passthrough (e.g. SoapySDR readSetting()). "
+            "Returns an empty string if unsupported or not set."
+        )
+
+
+        .def("get_overflow_count",&source::get_overflow_count,
+            "Number of overflow events detected by the backend, if supported. "
+            "Returns 0 for backends without overflow detection."
         )
 
         ;
