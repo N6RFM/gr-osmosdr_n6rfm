@@ -2,8 +2,8 @@ gr-osmosdr - generic gnuradio SDR I/O block
 ===========================================
 
 **This fork adds several improvements to the soapy backend**
-(SoapySDR integration via `soapy=` device strings, e.g.
-`driver=airspy,serial=...,soapy=0`) -- the soapy backend itself
+
+The soapy backend itself
 (`soapy_source_c.cc`, the whole `soapy=` mechanism) is original
 [osmocom/gr-osmosdr](https://github.com/osmocom/gr-osmosdr)
 functionality, present long before this fork existed.
