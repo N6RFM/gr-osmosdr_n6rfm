@@ -134,6 +134,66 @@ stage; `15` in table mode is just a step index two-thirds of the way
 up a precomputed curve. They are different units that happen to share
 a text box.
 
+### Verifying Gain Settings at Runtime
+
+Because the meaning of RF/IF/BB Gain changes with the Gain Table mode
+(above), it's easy to have a flowgraph running with gain values that
+don't do what the GRC fields suggest -- particularly after switching
+modes without re-checking. Rather than guessing, print the device's
+actual, live gain state to the GNU Radio console at startup.
+
+**In gnuradio-companion:**
+
+1. Add a **Snippet** block to your flowgraph (search the block
+   library for "Snippet").
+2. Set its **Location** to `after init` -- this runs once, after the
+   `osmocom Source` block is fully constructed, so `get_gain()` reads
+   real values rather than defaults.
+3. Paste the code from
+   [`tools/gnuradio_snippets/print_gain_settings.py`](tools/gnuradio_snippets/print_gain_settings.py)
+   into the Snippet's code box (everything below that file's
+   docstring).
+
+Replace `osmosdr_source_1` with your block's actual variable name if
+different -- check with:
+```bash
+grep -n "osmosdr.source" your_flowgraph.py
+```
+
+Sample output, Sensitivity mode with RF Gain = 21:
+```
+--- Gain settings ---
+Gain Table: 'sensitivity'
+SENS Gain: 21 dB
+Overall Gain (legacy path): 0 dB
+```
+
+Sample output, Manual mode with RF/IF/BB = 15/15/15:
+```
+--- Gain settings ---
+Gain Table: 'manual'
+LNA Gain: 15 dB
+MIX Gain: 15 dB
+VGA Gain: 15 dB
+Overall Gain (legacy path): 0 dB
+```
+
+Notes:
+- `get_gain_names(0)` queries the device directly, so this loop
+  automatically adapts to however many stages the current Gain Table
+  mode actually exposes (three in `manual`, one in
+  `linearity`/`sensitivity`) -- no need to hardcode stage names.
+- `get_setting("gains")` is specific to the soapy backend
+  (`soapy_source_c`'s generic settings passthrough). The `try/except`
+  keeps this snippet safe to leave in a flowgraph even if you later
+  switch to a non-soapy device string (`rtl=`, `hackrf=`, etc.),
+  where that call would otherwise raise.
+- `Overall Gain (legacy path)` reads back through the generic
+  (unnamed) `get_gain()` call -- this is a separate internal code path
+  from the named per-stage gains above and won't generally match their
+  sum; it's included for completeness, not as a sanity check.
+
+
 While originally being developed for the
 [OsmoSDR](https://osmocom.org/projects/osmosdr/wiki) hardware, this
 block has become a generic SDR I/O block for a variety of SDR
