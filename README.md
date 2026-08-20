@@ -93,6 +93,43 @@ is which, since no single tool documents all of them together:
   your own device string, any value works identically -- `serial=` is
   what actually picks the physical unit, not this number.
 
+## Gain Settings
+
+For Airspy through the soapy backend, the **Gain Table (Soapy)**
+dropdown on the `osmocom Source` block (`manual` / `linearity` /
+`sensitivity`) changes what the RF/IF/BB Gain fields below it actually
+mean -- they are not independent of this setting.
+
+| Goal | Gain Table | RF Gain | IF Gain | BB Gain | Notes |
+|---|---|---|---|---|---|
+| Max sensitivity | `sensitivity` | 21 | ignored | 21 | RF and BB **must match** -- see below |
+| Max linearity / overload resistance | `linearity` | 21 | ignored | 21 | Same match requirement as sensitivity |
+| Manual, independent 3-stage control | `manual` | device-specific | device-specific | device-specific | Only mode where RF/IF/BB address true independent LNA/MIX/VGA stages |
+| Manual, minimum gain (max headroom) | `manual` | 0 | 0 | 0 | Useful close to a strong transmitter |
+| Unset (driver default) | *(blank)* | -- | -- | -- | Whatever SoapyAirspy's internal default is; not recommended once tuning deliberately |
+
+**Why `21` specifically:** `linearity` and `sensitivity` are not
+per-stage dB values -- they select one step on one of libairspy's two
+built-in 22-step (0-21) precomputed gain tables
+(`airspy_set_linearity_gain()` / `airspy_set_sensitivity_gain()` in
+[SoapyAirspy_n6rfm](https://github.com/N6RFM/SoapyAirspy_n6rfm)'s
+`writeSetting("gains", ...)` handling). Each step jointly sets
+LNA/MIX/VGA to a vendor-tuned combination; `21` is the top of that
+table, i.e. maximum gain for whichever property (sensitivity vs.
+linearity) the table is optimized for. `manual` mode's actual per-stage
+ranges are hardware-reported -- confirm with `SoapySDRUtil
+--probe="driver=airspy"` rather than assuming a fixed range.
+
+**Why RF Gain and BB Gain must match in `linearity`/`sensitivity`
+mode:** in both modes, `get_gain_names()` reports a single named stage
+(`LIN` or `SENS`), not three. RF Gain and BB Gain both resolve to that
+*same* stage -- BB Gain is applied last in GRC's generated
+initialization order, so if it's left at a stale/default value
+different from RF Gain, it silently overwrites the value RF Gain just
+set, with no error. Setting both fields to the same number avoids
+this. IF Gain is safely a no-op in this situation and can be left at
+any value.
+
 While originally being developed for the
 [OsmoSDR](https://osmocom.org/projects/osmosdr/wiki) hardware, this
 block has become a generic SDR I/O block for a variety of SDR
