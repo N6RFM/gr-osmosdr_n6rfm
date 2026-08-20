@@ -10,6 +10,7 @@ Lukas Lao Beyer
 Lucas Teske (racerxdl) <https://github.com/racerxdl> -- added SpyServer support
 
 This fork (soapy backend bias-tee support, generic settings passthrough,
-overflow counter, GRC bias-tee/gain-table controls, C++17 build fix):
+overflow counter, GRC bias-tee/gain-table controls, C++17 build fix,
+multi-stage gain-name resolution fix, gain settings documentation):
 N6RFM
 Claude (Anthropic) -- pair-programmed the fixes and documentation with N6RFM
