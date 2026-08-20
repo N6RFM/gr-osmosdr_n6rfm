@@ -157,6 +157,8 @@ private:
     SoapySDR::Stream *_stream;
     size_t _nchan;
     unsigned long long _overflow_count = 0;
+    bool _warned_multi_stage = false;
+    std::string stage_for_slot( const std::string & slot, size_t chan );
 };
 
 #endif /* INCLUDED_SOAPY_SOURCE_C_H */

@@ -297,18 +297,60 @@ double soapy_source_c::get_gain( const std::string & name, size_t chan )
     return _device->getGain(SOAPY_SDR_RX, chan, name);
 }
 
+std::string soapy_source_c::stage_for_slot( const std::string & slot,
+                                             size_t chan )
+{
+    const std::vector<std::string> names = this->get_gain_names(chan);
+    const size_t n = names.size();
+    if ( n == 0 )
+        return std::string();
+
+    if ( n == 1 ) {
+        // Single true stage (e.g. Sensitivity/Linearity table mode):
+        // only RF Gain addresses it. IF and BB are honest no-ops here,
+        // not silent duplicate/overwrite writes to the same stage.
+        if ( slot == "RF" ) return names.front();
+        return std::string();
+    }
+
+    if ( n == 2 ) {
+        // Unchanged from prior behavior.
+        if ( slot == "RF" ) return names.front();
+        if ( slot == "BB" ) return names.back();
+        return std::string(); // no true middle stage -- honest no-op
+    }
+
+    // n >= 3: front=RF, back=BB, true middle stage=IF.
+    if ( n > 3 && ! _warned_multi_stage ) {
+        std::cerr << "[soapy_source_c] WARNING: device reports " << n
+                   << " gain stages; RF/IF/BB fields can only address 3 "
+                   << "of them (RF=" << names.front()
+                   << ", IF=" << names[n/2]
+                   << ", BB=" << names.back()
+                   << "). Use a named gain (e.g. via device args or "
+                   << "-G name:value) to reach the rest." << std::endl;
+        _warned_multi_stage = true;
+    }
+
+    if ( slot == "RF" ) return names.front();
+    if ( slot == "IF" ) return names[n/2];
+    if ( slot == "BB" ) return names.back();
+    return std::string();
+}
 double soapy_source_c::set_if_gain( double gain, size_t chan )
 {
-    //docs specify RF gain is the first element
-    const std::string name = this->get_gain_names(chan).front();
-    return this->set_gain(gain, name, chan);
+    const std::string name = this->stage_for_slot( "IF", chan );
+    if ( name.empty() )
+        return this->get_gain( chan ); // honest no-op, not a silent duplicate write
+    return this->set_gain( gain, name, chan );
 }
 
 double soapy_source_c::set_bb_gain( double gain, size_t chan )
 {
-    //docs specify baseband gain is the last element
-    const std::string name = this->get_gain_names(chan).back();
-    return this->set_gain(gain, name, chan);
+    const std::string name = this->stage_for_slot( "BB", chan );
+    if ( name.empty() )
+        return this->get_gain( chan ); // honest no-op, not a silent duplicate write
+    return this->set_gain( gain, name, chan );
 }
 
 std::vector< std::string > soapy_source_c::get_antennas( size_t chan )
