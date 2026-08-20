@@ -259,3 +259,9 @@ Issues
 
 For bugs or questions specific to this fork's changes, open an issue
 at <https://github.com/N6RFM/gr-osmocom_n6rfm/issues>.
+
+Authors
+-------
+See [AUTHORS](AUTHORS) for the full list. This fork's changes --
+including the soapy-backend gain-stage fixes and documentation in this
+README -- were made by N6RFM, pair-programmed with Claude (Anthropic).
