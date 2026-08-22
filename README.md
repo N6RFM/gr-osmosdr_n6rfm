@@ -143,60 +143,70 @@ against the vendor source
 
 Values below are keyed by RF Gain (what you actually type in GRC) rather than the raw array index -- the reversal from above is already applied:
 
-**Linearity**
+<table>
+<tr>
+<td valign="top">
 
-| RF Gain | VGA | MIX | LNA |
-|---|---|---|---|
-| 0 | 4 | 0 | 0 |
-| 1 | 5 | 0 | 0 |
-| 2 | 6 | 1 | 0 |
-| 3 | 7 | 1 | 0 |
-| 4 | 8 | 1 | 0 |
-| 5 | 9 | 1 | 0 |
-| 6 | 10 | 2 | 0 |
-| 7 | 10 | 2 | 1 |
-| 8 | 10 | 0 | 3 |
-| 9 | 10 | 0 | 5 |
-| 10 | 10 | 1 | 6 |
-| 11 | 10 | 0 | 8 |
-| 12 | 10 | 0 | 9 |
-| 13 | 10 | 5 | 8 |
-| 14 | 10 | 6 | 9 |
-| 15 | 11 | 6 | 9 |
-| 16 | 11 | 7 | 10 |
-| 17 | 11 | 8 | 12 |
-| 18 | 11 | 9 | 13 |
-| 19 | 11 | 11 | 14 |
-| 20 | 12 | 12 | 14 |
-| 21 | 13 | 12 | 14 |
+<table>
+<tr><th colspan="4">Linearity</th></tr>
+<tr><th>RF Gain</th><th>VGA</th><th>MIX</th><th>LNA</th></tr>
+<tr><td>0</td><td>4</td><td>0</td><td>0</td></tr>
+<tr><td>1</td><td>5</td><td>0</td><td>0</td></tr>
+<tr><td>2</td><td>6</td><td>1</td><td>0</td></tr>
+<tr><td>3</td><td>7</td><td>1</td><td>0</td></tr>
+<tr><td>4</td><td>8</td><td>1</td><td>0</td></tr>
+<tr><td>5</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>6</td><td>10</td><td>2</td><td>0</td></tr>
+<tr><td>7</td><td>10</td><td>2</td><td>1</td></tr>
+<tr><td>8</td><td>10</td><td>0</td><td>3</td></tr>
+<tr><td>9</td><td>10</td><td>0</td><td>5</td></tr>
+<tr><td>10</td><td>10</td><td>1</td><td>6</td></tr>
+<tr><td>11</td><td>10</td><td>0</td><td>8</td></tr>
+<tr><td>12</td><td>10</td><td>0</td><td>9</td></tr>
+<tr><td>13</td><td>10</td><td>5</td><td>8</td></tr>
+<tr><td>14</td><td>10</td><td>6</td><td>9</td></tr>
+<tr><td>15</td><td>11</td><td>6</td><td>9</td></tr>
+<tr><td>16</td><td>11</td><td>7</td><td>10</td></tr>
+<tr><td>17</td><td>11</td><td>8</td><td>12</td></tr>
+<tr><td>18</td><td>11</td><td>9</td><td>13</td></tr>
+<tr><td>19</td><td>11</td><td>11</td><td>14</td></tr>
+<tr><td>20</td><td>12</td><td>12</td><td>14</td></tr>
+<tr><td>21</td><td>13</td><td>12</td><td>14</td></tr>
+</table>
 
-**Sensitivity**
+</td>
+<td valign="top">
 
-| RF Gain | VGA | MIX | LNA |
-|---|---|---|---|
-| 0 | 4 | 0 | 0 |
-| 1 | 4 | 0 | 1 |
-| 2 | 4 | 0 | 2 |
-| 3 | 4 | 0 | 3 |
-| 4 | 4 | 1 | 5 |
-| 5 | 4 | 2 | 6 |
-| 6 | 4 | 2 | 7 |
-| 7 | 4 | 3 | 8 |
-| 8 | 4 | 4 | 9 |
-| 9 | 5 | 4 | 9 |
-| 10 | 5 | 4 | 12 |
-| 11 | 5 | 7 | 12 |
-| 12 | 5 | 8 | 13 |
-| 13 | 5 | 9 | 14 |
-| 14 | 6 | 9 | 14 |
-| 15 | 7 | 10 | 14 |
-| 16 | 8 | 10 | 14 |
-| 17 | 9 | 11 | 14 |
-| 18 | 10 | 12 | 14 |
-| 19 | 11 | 12 | 14 |
-| 20 | 12 | 12 | 14 |
-| 21 | 13 | 12 | 14 |
+<table>
+<tr><th colspan="4">Sensitivity</th></tr>
+<tr><th>RF Gain</th><th>VGA</th><th>MIX</th><th>LNA</th></tr>
+<tr><td>0</td><td>4</td><td>0</td><td>0</td></tr>
+<tr><td>1</td><td>4</td><td>0</td><td>1</td></tr>
+<tr><td>2</td><td>4</td><td>0</td><td>2</td></tr>
+<tr><td>3</td><td>4</td><td>0</td><td>3</td></tr>
+<tr><td>4</td><td>4</td><td>1</td><td>5</td></tr>
+<tr><td>5</td><td>4</td><td>2</td><td>6</td></tr>
+<tr><td>6</td><td>4</td><td>2</td><td>7</td></tr>
+<tr><td>7</td><td>4</td><td>3</td><td>8</td></tr>
+<tr><td>8</td><td>4</td><td>4</td><td>9</td></tr>
+<tr><td>9</td><td>5</td><td>4</td><td>9</td></tr>
+<tr><td>10</td><td>5</td><td>4</td><td>12</td></tr>
+<tr><td>11</td><td>5</td><td>7</td><td>12</td></tr>
+<tr><td>12</td><td>5</td><td>8</td><td>13</td></tr>
+<tr><td>13</td><td>5</td><td>9</td><td>14</td></tr>
+<tr><td>14</td><td>6</td><td>9</td><td>14</td></tr>
+<tr><td>15</td><td>7</td><td>10</td><td>14</td></tr>
+<tr><td>16</td><td>8</td><td>10</td><td>14</td></tr>
+<tr><td>17</td><td>9</td><td>11</td><td>14</td></tr>
+<tr><td>18</td><td>10</td><td>12</td><td>14</td></tr>
+<tr><td>19</td><td>11</td><td>12</td><td>14</td></tr>
+<tr><td>20</td><td>12</td><td>12</td><td>14</td></tr>
+<tr><td>21</td><td>13</td><td>12</td><td>14</td></tr>
+</table>
 
+</td>
+</tr>
+</table>
 The value you set on RF Gain (`0`-`21`) is not used as a direct array
 index -- libairspy internally reverses it (`index = 21 - value`) before
 looking up the table, so RF Gain `21` reads array position `0` (the
