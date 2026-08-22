@@ -134,6 +134,51 @@ stage; `15` in table mode is just a step index two-thirds of the way
 up a precomputed curve. They are different units that happen to share
 a text box.
 
+### Linearity / Sensitivity Table Reference
+
+`0-21` in `linearity`/`sensitivity` mode maps to a real, fixed
+combination of LNA/MIX/VGA inside libairspy -- confirmed directly
+against the vendor source
+([`airspy.c`](https://github.com/airspy/airspyone_host/blob/master/libairspy/src/airspy.c)):
+
+```c
+uint8_t airspy_linearity_vga_gains[22]   = {13,12,11,11,11,11,11,10,10,10,10,10,10,10,10,10,9,8,7,6,5,4};
+uint8_t airspy_linearity_mixer_gains[22] = {12,12,11,9,8,7,6,6,5,0,0,1,0,0,2,2,1,1,1,1,0,0};
+uint8_t airspy_linearity_lna_gains[22]   = {14,14,14,13,12,10,9,9,8,9,8,6,5,3,1,0,0,0,0,0,0,0};
+
+uint8_t airspy_sensitivity_vga_gains[22]   = {13,12,11,10,9,8,7,6,5,5,5,5,5,4,4,4,4,4,4,4,4,4};
+uint8_t airspy_sensitivity_mixer_gains[22] = {12,12,12,12,11,10,10,9,9,8,7,4,4,4,3,2,2,1,0,0,0,0};
+uint8_t airspy_sensitivity_lna_gains[22]   = {14,14,14,14,14,14,14,14,14,13,12,12,9,9,8,7,6,5,3,2,1,0};
+```
+
+The value you set on RF Gain (`0`-`21`) is not used as a direct array
+index -- libairspy internally reverses it (`index = 21 - value`) before
+looking up the table, so RF Gain `21` reads array position `0` (the
+highest values above) and RF Gain `0` reads position `21` (the
+lowest). Net effect for you: RF Gain `21` is still genuinely maximum
+gain, `0` is genuinely minimum -- the reversal is just an internal
+implementation detail, verified row-by-row against real hardware
+output.
+
+**Naming collision to watch for:** the vendor's own array names call
+the baseband stage `vga`, but tools that dump this table sometimes
+label that same column `if` -- **that `if` is not the same thing as
+gr-osmocom's "IF Gain" GRC field.** GRC's IF Gain field addresses the
+**MIX** stage (see the table above), not VGA. If you're ever
+cross-referencing a raw gain-table dump like this against the GRC
+block's fields, don't assume matching column names line up.
+
+**What the two tables reveal about intent:** `sensitivity` raises LNA
+gain early (near-max by RF Gain `~8`-`9`), prioritizing noise
+figure/weak-signal sensitivity even before baseband gain is elevated.
+`linearity` holds LNA low much longer (doesn't approach max until RF
+Gain `~17`+), loading gain into VGA/baseband first instead --
+protecting front-end linearity against strong nearby signals for as
+long as possible. Choose accordingly: `sensitivity` for weak, isolated
+signals; `linearity` when strong nearby transmitters risk
+intermodulation.
+
+
 ### Verifying Gain Settings at Runtime
 
 Because the meaning of RF/IF/BB Gain changes with the Gain Table mode
