@@ -141,15 +141,61 @@ combination of LNA/MIX/VGA inside libairspy -- confirmed directly
 against the vendor source
 ([`airspy.c`](https://github.com/airspy/airspyone_host/blob/master/libairspy/src/airspy.c)):
 
-```c
-uint8_t airspy_linearity_vga_gains[22]   = {13,12,11,11,11,11,11,10,10,10,10,10,10,10,10,10,9,8,7,6,5,4};
-uint8_t airspy_linearity_mixer_gains[22] = {12,12,11,9,8,7,6,6,5,0,0,1,0,0,2,2,1,1,1,1,0,0};
-uint8_t airspy_linearity_lna_gains[22]   = {14,14,14,13,12,10,9,9,8,9,8,6,5,3,1,0,0,0,0,0,0,0};
+Values below are keyed by RF Gain (what you actually type in GRC) rather than the raw array index -- the reversal from above is already applied:
 
-uint8_t airspy_sensitivity_vga_gains[22]   = {13,12,11,10,9,8,7,6,5,5,5,5,5,4,4,4,4,4,4,4,4,4};
-uint8_t airspy_sensitivity_mixer_gains[22] = {12,12,12,12,11,10,10,9,9,8,7,4,4,4,3,2,2,1,0,0,0,0};
-uint8_t airspy_sensitivity_lna_gains[22]   = {14,14,14,14,14,14,14,14,14,13,12,12,9,9,8,7,6,5,3,2,1,0};
-```
+**Linearity**
+
+| RF Gain | VGA | MIX | LNA |
+|---|---|---|---|
+| 0 | 4 | 0 | 0 |
+| 1 | 5 | 0 | 0 |
+| 2 | 6 | 1 | 0 |
+| 3 | 7 | 1 | 0 |
+| 4 | 8 | 1 | 0 |
+| 5 | 9 | 1 | 0 |
+| 6 | 10 | 2 | 0 |
+| 7 | 10 | 2 | 1 |
+| 8 | 10 | 0 | 3 |
+| 9 | 10 | 0 | 5 |
+| 10 | 10 | 1 | 6 |
+| 11 | 10 | 0 | 8 |
+| 12 | 10 | 0 | 9 |
+| 13 | 10 | 5 | 8 |
+| 14 | 10 | 6 | 9 |
+| 15 | 11 | 6 | 9 |
+| 16 | 11 | 7 | 10 |
+| 17 | 11 | 8 | 12 |
+| 18 | 11 | 9 | 13 |
+| 19 | 11 | 11 | 14 |
+| 20 | 12 | 12 | 14 |
+| 21 | 13 | 12 | 14 |
+
+**Sensitivity**
+
+| RF Gain | VGA | MIX | LNA |
+|---|---|---|---|
+| 0 | 4 | 0 | 0 |
+| 1 | 4 | 0 | 1 |
+| 2 | 4 | 0 | 2 |
+| 3 | 4 | 0 | 3 |
+| 4 | 4 | 1 | 5 |
+| 5 | 4 | 2 | 6 |
+| 6 | 4 | 2 | 7 |
+| 7 | 4 | 3 | 8 |
+| 8 | 4 | 4 | 9 |
+| 9 | 5 | 4 | 9 |
+| 10 | 5 | 4 | 12 |
+| 11 | 5 | 7 | 12 |
+| 12 | 5 | 8 | 13 |
+| 13 | 5 | 9 | 14 |
+| 14 | 6 | 9 | 14 |
+| 15 | 7 | 10 | 14 |
+| 16 | 8 | 10 | 14 |
+| 17 | 9 | 11 | 14 |
+| 18 | 10 | 12 | 14 |
+| 19 | 11 | 12 | 14 |
+| 20 | 12 | 12 | 14 |
+| 21 | 13 | 12 | 14 |
 
 The value you set on RF Gain (`0`-`21`) is not used as a direct array
 index -- libairspy internally reverses it (`index = 21 - value`) before
