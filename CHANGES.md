@@ -214,12 +214,23 @@ point equality. They are now computed in `double` and matched within
   connection is still not detected there.
 
 **Status:** the `tcp_client.cc` changes pass `g++ -std=c++17
--fsyntax-only`; `spyserver_source_c.cc` was edited without a GNU Radio
-build environment available. Baseline before these changes, against
-SpyServer v2.0.1921 with an Airspy R2 at 2.5 MS/s over gigabit
-Ethernet: a 10 s request delivered 25,000,000 samples in 11.0 s, with no
-`O` or `Lost` messages. Results after rebuilding with these changes are
-not yet recorded here.
+-fsyntax-only`; the full library was then built against GNU Radio
+3.10.9 and tested against SpyServer v2.0.1921 with an Airspy R2 at
+2.5 MS/s over gigabit Ethernet.
+
+- Throughput: a 420 s run delivered 2.48 to 2.55 MS/s every second, 0 low
+  seconds, no `O` or `Lost` messages (the pre-fix baseline was 25,000,000
+  samples in 11.0 s, also clean, so no regression).
+- Disconnect: with a flowgraph of `osmosdr.source` into a null sink,
+  stopping the server mid-stream printed `SpyServer: Error on ThreadLoop:
+  Server closed the connection` and `SpyServer: stream ended (connection
+  lost or stopped)`, and `top_block.wait()` returned by itself 7.6 s after
+  the run began (a few seconds after the server was stopped). Before the
+  fix the flowgraph hung silently.
+- `osmocom_fft` opens its spectrum window.
+
+Not yet exercised: the 8-bit path (needs `force_8bit = 1` on the server)
+and the split-header case (depends on TCP segment boundaries).
 
 Files changed: `lib/spyserver/spyserver_source_c.cc`,
 `lib/spyserver/tcp_client.cc`, `lib/spyserver/tcp_client.h`
