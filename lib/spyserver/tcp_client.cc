@@ -161,3 +161,22 @@ uint64_t tcp_client::available_data() {
 
     return bytesAvailable;
 }
+
+bool tcp_client::peer_closed() {
+#ifdef _WIN32
+    return false;
+#else
+    if (s < 0) {
+        return true;
+    }
+    char c;
+    ssize_t n = recv(s, &c, 1, MSG_PEEK | MSG_DONTWAIT);
+    if (n == 0) {
+        return true;   // orderly shutdown by the server
+    }
+    if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+        return true;   // connection error
+    }
+    return false;
+#endif
+}

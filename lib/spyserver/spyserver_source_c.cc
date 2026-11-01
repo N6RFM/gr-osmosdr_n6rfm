@@ -31,6 +31,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 #include <boost/assign.hpp>
 #include <boost/format.hpp>
@@ -218,7 +219,8 @@ void spyserver_source_c::on_connect()
   //availableSampleRates
   std::cerr << "SpyServer: Maximum Sample Rate: " << device_info.MaximumSampleRate << std::endl;
   for (unsigned int i = device_info.MinimumIQDecimation; i<=device_info.DecimationStageCount; i++) {
-    uint32_t sr = device_info.MaximumSampleRate / (1 << i);
+    // FIX: integer division truncated rates such as 39062.5 to 39062
+    double sr = (double)device_info.MaximumSampleRate / (double)(1u << i);
     _sample_rates.push_back( std::pair<double, uint32_t>((double)sr, i ) );
   }
   std::sort(_sample_rates.begin(), _sample_rates.end());
@@ -287,8 +289,14 @@ void spyserver_source_c::cleanup() {
     parser_phase = AcquiringHeader;
     parser_position = 0;
 
-    streaming = false;
-    terminated = true;
+    // Set the flags under the FIFO lock and wake work(), otherwise work() stays
+    // blocked in _samp_avail.wait() forever after the connection dies.
+    {
+      boost::unique_lock<boost::mutex> lock(_fifo_lock);
+      streaming = false;
+      terminated = true;
+    }
+    _samp_avail.notify_all();
 }
 
 
@@ -307,6 +315,13 @@ void spyserver_source_c::thread_loop() {
         availableData = availableData > BufferSize ? BufferSize : availableData;
         client.receive_data(buffer, availableData);
         parse_message(buffer, availableData);
+      } else {
+        // FIX: this loop used to spin at 100% of a core, and never noticed the
+        // server closing the connection (FIONREAD just keeps returning 0).
+        if (client.peer_closed()) {
+          throw std::runtime_error("Server closed the connection");
+        }
+        std::this_thread::sleep_for(std::chrono::microseconds(200));
       }
     }
   } catch (std::exception &e) {
@@ -354,6 +369,7 @@ void spyserver_source_c::parse_message(char *buffer, uint32_t len) {
           }
 
           body_buffer = new uint8_t[header.BodySize];
+          body_buffer_length = header.BodySize;  // FIX: was never set, so every message reallocated
         }
       }
     }
@@ -383,7 +399,9 @@ int spyserver_source_c::parse_header(char *buffer, uint32_t length) {
 
   while (length > 0) {
     int to_write = std::min((uint32_t)(sizeof(MessageHeader) - parser_position), length);
-    std::memcpy(&header + parser_position, buffer, to_write);
+    // FIX: "&header + n" advances by n * sizeof(MessageHeader) bytes, so a header
+    // split across two TCP reads was written outside the struct. Offset in bytes.
+    std::memcpy((uint8_t *)&header + parser_position, buffer, to_write);
     length -= to_write;
     buffer += to_write;
     parser_position += to_write;
@@ -525,11 +543,13 @@ void spyserver_source_c::process_uint8_samples() {
   uint8_t *sample = (uint8_t *)body_buffer;
 
   n_avail = _fifo->capacity() - _fifo->size();
-  to_copy = (n_avail < num_samples ? n_avail : num_samples / 2);
+  // FIX: was num_samples / 2 (copied half the samples and always printed "O")
+  to_copy = (n_avail < num_samples ? n_avail : num_samples);
 
   for (size_t i=0; i < to_copy; i++)
   {
-    _fifo->push_back(gr_complex(*sample - 128.f / 128.f, *(sample+1) - 128.f / 128.f));
+    // FIX: operator precedence; was (*sample - 128.f/128.f), i.e. sample - 1
+    _fifo->push_back(gr_complex((*sample - 128.f) / 128.f, (*(sample+1) - 128.f) / 128.f));
     sample += 2;
   }
   _fifo_lock.unlock();
@@ -593,10 +613,10 @@ double spyserver_source_c::set_sample_rate(double sampleRate) {
   if (sampleRate <= 0xFFFFFFFF) {
     std::cerr << "SpyServer: Setting sample rate to " << sampleRate << std::endl;
     for (unsigned int i=0; i<_sample_rates.size(); i++) {
-      if (_sample_rates[i].first == sampleRate) {
+      if (std::fabs(_sample_rates[i].first - sampleRate) < 1.0) {
               channel_decimation_stage_count = _sample_rates[i].second;
               set_setting(SETTING_IQ_DECIMATION, {channel_decimation_stage_count});
-              _sample_rate = sampleRate;
+              _sample_rate = _sample_rates[i].first;
               return get_sample_rate();
       }
     }
@@ -681,6 +701,10 @@ int spyserver_source_c::work( int noutput_items,
   int n_samples_avail = _fifo->size();
 
   while (n_samples_avail < noutput_items) {
+    if (terminated || !streaming) {
+      std::cerr << "SpyServer: stream ended (connection lost or stopped)" << std::endl;
+      return WORK_DONE;
+    }
     _samp_avail.wait(lock);
     n_samples_avail = _fifo->size();
   }
@@ -870,7 +894,13 @@ osmosdr::freq_range_t spyserver_source_c::get_bandwidth_range( size_t chan )
 {
   osmosdr::freq_range_t bandwidths;
 
-  bandwidths += osmosdr::range_t( get_bandwidth( chan ) );
+  // FIX: a single-value range has zero width, which makes GUI sliders
+  // (osmocom_fft) divide by zero. Report 0..current rate (or device max).
+  double top = get_bandwidth( chan );
+  if (top <= 0) {
+    top = device_info.MaximumSampleRate > 0 ? (double)device_info.MaximumSampleRate : 1.0;
+  }
+  bandwidths += osmosdr::range_t( 0.0, top );
 
   return bandwidths;
 }

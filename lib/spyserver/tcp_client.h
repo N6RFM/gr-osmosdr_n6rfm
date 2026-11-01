@@ -66,6 +66,7 @@ public:
     void receive_data(char *data, int length);
     void send_data(char *data, int length);
     uint64_t available_data();
+    bool peer_closed();   // true if the server closed the connection (POSIX only)
 
     inline void wait_for_data(uint64_t bytes, uint32_t timeout) {
         uint32_t checkTime = (int) time(NULL);
