@@ -1,4 +1,4 @@
-# Changes in this fork (N6RFM/gr-osmocom_n6rfm)
+# Changes in this fork (N6RFM/gr-osmosdr_n6rfm)
 
 Base: [racerxdl/gr-osmosdr](https://github.com/racerxdl/gr-osmosdr), synced with upstream.
 
@@ -138,3 +138,88 @@ signaling") -- this tag emission has nothing to detect against a
 driver that silently drops samples without reporting it.
 
 Files changed: `lib/soapy/soapy_source_c.cc`
+
+## Fixed: SpyServer client (`lib/spyserver/`)
+
+Found by reading the code while chasing stutter on an Airspy R2 streamed
+from SpyServer v2.0.1921 running on an Orange Pi Zero 3. The client is
+Lucas Teske's (racerxdl) and is otherwise unchanged. Device strings,
+sample rates and the wire protocol behave as before; see "SpyServer
+Source" in the README for the user-facing description.
+
+**Silent hang when the server goes away.** `thread_loop()` polled the
+socket with `FIONREAD` and only called `recv()` when bytes were
+waiting. After the server closed the connection `FIONREAD` just kept
+returning 0, and an `ioctl` failure (return value -1) matched none of
+the errno constants the `switch` in `available_data()` tests for, so a
+dead connection was never noticed. `work()` then sat in
+`_samp_avail.wait()` with nothing left to notify it, and the flowgraph
+froze with no message.
+
+Fix: new `tcp_client::peer_closed()` (a `recv(MSG_PEEK | MSG_DONTWAIT)`
+probe; POSIX only, returns `false` on Windows, i.e. the old behaviour)
+is checked whenever no data is waiting. `cleanup()` now sets
+`streaming`/`terminated` under `_fifo_lock` and calls `notify_all()`, and
+`work()` returns `WORK_DONE` (printing `SpyServer: stream ended
+(connection lost or stopped)`) when `terminated || !streaming`.
+
+**Receive thread spun at 100% of a core.** With no data waiting,
+`thread_loop()` looped immediately. It now sleeps 200 us (about 2 KB of
+a 10 MB/s stream, far below the kernel socket buffer).
+
+**Message header parsed at the wrong offset.** `parse_header()` used
+`memcpy(&header + parser_position, ...)`. `header` is a 20-byte
+`MessageHeader`, so that pointer arithmetic advances in 20-byte steps,
+and a header split across two TCP reads was written outside the struct
+(into neighbouring members). Now `(uint8_t *)&header + parser_position`.
+Whether a split happens depends on where the server's TCP segment
+boundaries fall relative to message starts, so it can be rare, but when
+it happens it corrupts state.
+
+**8-bit IQ path.** `process_uint8_samples()` had three bugs: it copied
+`num_samples / 2` samples instead of `num_samples`, it printed `O` on
+every message as a result, and `*sample - 128.f / 128.f` evaluates as
+`sample - 1.0` (operator precedence) instead of `(sample - 128) / 128`.
+Only reachable when the server forces 8-bit (`force_8bit = 1`), because
+the client itself always requests 16-bit.
+
+**Body buffer reallocated every message.** `body_buffer_length` was
+never updated, so the `body_buffer_length < header.BodySize` test was
+always true.
+
+**`osmocom_fft` crash.** `get_bandwidth_range()` returned a single-value
+range (zero width), which made the qtgui `Range` used for the bandwidth
+slider divide by zero (`ZeroDivisionError` in `find_nsteps()`). It now
+returns 0..current sample rate (or the device's maximum rate before one
+is set). `set_bandwidth()` is still a no-op.
+
+**Sample-rate list.** Rates were computed with integer division
+(`2500000 / 64` gave 39062, not 39062.5) and matched with exact floating
+point equality. They are now computed in `double` and matched within
+1 Hz; `_sample_rate` stores the list's value.
+
+**Known limitations, not changed here:**
+
+- The format request is hard-coded to 16-bit (`on_connect()`), and the
+  device info's `ForcedIQFormat` field is never checked.
+- 24-bit IQ and 4-bit FFT messages are silently ignored; the FFT stream
+  is a TODO.
+- `set_freq_corr()`, `set_biast()` and `set_bandwidth()` do nothing.
+- In `lib/source_impl.cc` the `spyserver` case is inside
+  `#ifdef ENABLE_AIRSPY` (not `ENABLE_SPYSERVER`), so it needs libairspy
+  at build time.
+- The `SpyServer: Lost N frames from SpyServer!` message has no trailing
+  newline.
+- On Windows `peer_closed()` always returns `false`, so a lost
+  connection is still not detected there.
+
+**Status:** the `tcp_client.cc` changes pass `g++ -std=c++17
+-fsyntax-only`; `spyserver_source_c.cc` was edited without a GNU Radio
+build environment available. Baseline before these changes, against
+SpyServer v2.0.1921 with an Airspy R2 at 2.5 MS/s over gigabit
+Ethernet: a 10 s request delivered 25,000,000 samples in 11.0 s, with no
+`O` or `Lost` messages. Results after rebuilding with these changes are
+not yet recorded here.
+
+Files changed: `lib/spyserver/spyserver_source_c.cc`,
+`lib/spyserver/tcp_client.cc`, `lib/spyserver/tcp_client.h`
