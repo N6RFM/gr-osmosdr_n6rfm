@@ -127,11 +127,10 @@ Things that do **not** work:
 - `spyserver=10.10.10.3:5555` (a `host:port` form) -- fails with
   `You should defined an IP to connect.` because the block only reads
   `ip=` / `host=`.
-- Building without libairspy: in `lib/source_impl.cc` the `spyserver`
-  case sits inside `#ifdef ENABLE_AIRSPY`, so the block is only
-  instantiated when libairspy was found at build time, even though
-  the `spyserver` type is listed as built in. Install
-  `libairspy-dev` before running `cmake`.
+- Building without libairspy used to fail to include the SpyServer block
+  (the `spyserver` case in `lib/source_impl.cc` sat inside
+  `#ifdef ENABLE_AIRSPY`). It is now guarded by `ENABLE_SPYSERVER`, so
+  libairspy is no longer needed for it.
 
 A successful connection prints, on stderr:
 

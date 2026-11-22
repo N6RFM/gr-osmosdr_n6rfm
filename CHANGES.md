@@ -200,16 +200,15 @@ point equality. They are now computed in `double` and matched within
 
 **Known limitations, not changed here:**
 
-- The format request is hard-coded to 16-bit (`on_connect()`), and the
-  device info's `ForcedIQFormat` field is never checked.
+- The format request is hard-coded to 16-bit (`on_connect()`). (The
+  device info's `ForcedIQFormat` field was not checked when this section
+  was written; it is now, see the overflow-counter section below.)
 - 24-bit IQ and 4-bit FFT messages are silently ignored; the FFT stream
   is a TODO.
 - `set_freq_corr()`, `set_biast()` and `set_bandwidth()` do nothing.
-- In `lib/source_impl.cc` the `spyserver` case is inside
-  `#ifdef ENABLE_AIRSPY` (not `ENABLE_SPYSERVER`), so it needs libairspy
-  at build time.
-- The `SpyServer: Lost N frames from SpyServer!` message has no trailing
-  newline.
+- (Since fixed, see the overflow-counter section below: the `ENABLE_AIRSPY`
+  guard around the `spyserver` case in `lib/source_impl.cc`, and the missing
+  newline after `SpyServer: Lost N frames from SpyServer!`.)
 - On Windows `peer_closed()` always returns `false`, so a lost
   connection is still not detected there.
 
@@ -228,6 +227,11 @@ point equality. They are now computed in `double` and matched within
   the run began (a few seconds after the server was stopped). Before the
   fix the flowgraph hung silently.
 - `osmocom_fft` opens its spectrum window.
+
+Not yet run against SpyServer v2.0.1922 (the server was upgraded
+afterwards; a separate client, not this library, was used to check that
+it streams, reports the same device info and still changes level with
+gain).
 
 Not yet exercised: the 8-bit path (needs `force_8bit = 1` on the server)
 and the split-header case (depends on TCP segment boundaries).
