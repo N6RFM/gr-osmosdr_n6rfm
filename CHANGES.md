@@ -261,9 +261,13 @@ Files changed: `lib/spyserver/spyserver_source_c.cc`,
   answer a CMD_GET_SETTING probe, so the applied gain cannot be read back from
   that server; verify it from the data level.
 - **`ForcedIQFormat` warning** at connect when the server forces a format.
-- **Device info log.** Three `SpyServer: device info ...` lines at connect: type, serial,
+- **Device info log.** Three `SpyServer: device info ...` lines at connect (printed only when
+  `SPYSERVER_VERBOSE` is set): type, serial,
   protocol version, max sample rate/bandwidth, decimation stages, gain stages, max gain
   index, resolution, frequency range and forced IQ format, as sent by the server.
+- **Quiet by default.** `Got sync Info`, `Maximum Sample Rate` and the device info lines are
+  printed only when the environment variable `SPYSERVER_VERBOSE` is set. Connect, gain, sample
+  rate, streaming and error messages are unchanged.
 - **Build guard.** The `spyserver` case in `source_impl.cc` was inside
   `#ifdef ENABLE_AIRSPY`; it is now under `ENABLE_SPYSERVER`.
 - `SpyServer: Lost N frames` now ends with a newline, and `dropped_buffers` is

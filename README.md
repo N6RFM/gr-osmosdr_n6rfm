@@ -138,8 +138,6 @@ A successful connection prints, on stderr:
 SpyServer(10.10.10.3, 5555)
 SpyServer: Trying to connect
 SpyServer: Connected
-SpyServer: Got sync Info
-SpyServer: Maximum Sample Rate: 2500000
 SpyServer: Ready
 ```
 
@@ -213,7 +211,8 @@ seen (`Lost N frames`). The tag key and value are the same as the soapy
 backend's, so the Overflow Tag Monitor reads both; the tag sits at the
 sample index where the gap begins (for a sequence gap the number of
 missing samples is not known). Other messages: `SpyServer: device info: ...`
-(three lines at connect: device type, serial, server protocol version, max
+(three lines at connect, printed only when the environment variable
+`SPYSERVER_VERBOSE` is set: device type, serial, server protocol version, max
 sample rate and bandwidth, decimation stages, gain stages and max gain
 index, resolution, frequency range, forced IQ format), `SpyServer: server gain
 at connect: N` (the server's own gain before this block sets one),

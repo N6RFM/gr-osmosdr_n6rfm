@@ -46,6 +46,13 @@
 
 #include "arg_helpers.h"
 
+#include <cstdlib>
+static bool spyserver_verbose()
+{
+  static const bool v = std::getenv("SPYSERVER_VERBOSE") != nullptr;
+  return v;
+}
+
 using namespace boost::assign;
 
 spyserver_source_c_sptr make_spyserver_source_c (const std::string & args)
@@ -175,7 +182,7 @@ void spyserver_source_c::connect()
       }
 
       if (got_sync_info) {
-        std::cerr << "SpyServer: Got sync Info" << std::endl;
+        if (spyserver_verbose()) std::cerr << "SpyServer: Got sync Info" << std::endl;
         on_connect();
         return;
       }
@@ -217,7 +224,8 @@ void spyserver_source_c::on_connect()
   //set_setting(SETTING_FFT_DB_RANGE, { fftRange });
   //device_info.MaximumSampleRate
   //availableSampleRates
-  std::cerr << "SpyServer: Maximum Sample Rate: " << device_info.MaximumSampleRate << std::endl;
+  if (spyserver_verbose())
+    std::cerr << "SpyServer: Maximum Sample Rate: " << device_info.MaximumSampleRate << std::endl;
   for (unsigned int i = device_info.MinimumIQDecimation; i<=device_info.DecimationStageCount; i++) {
     // FIX: integer division truncated rates such as 39062.5 to 39062
     double sr = (double)device_info.MaximumSampleRate / (double)(1u << i);
@@ -514,7 +522,8 @@ void spyserver_source_c::process_device_info() {
   minimum_tunable_frequency = device_info.MinimumFrequency;
   maximum_tunable_frequency = device_info.MaximumFrequency;
   _max_gain_index = device_info.MaximumGainIndex;
-  std::cerr << "SpyServer: device info: type " << device_info.DeviceType
+  if (spyserver_verbose())
+    std::cerr << "SpyServer: device info: type " << device_info.DeviceType
             << ", serial " << device_info.DeviceSerial
             << ", protocol " << ((header.ProtocolID >> 24) & 0xFF) << "." << ((header.ProtocolID >> 16) & 0xFF)
             << "." << (header.ProtocolID & 0xFFFF) << "\n"
