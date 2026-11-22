@@ -372,7 +372,7 @@ source_impl::source_impl( const std::string &args )
     }
 #endif
 
-#ifdef ENABLE_AIRSPY
+#ifdef ENABLE_SPYSERVER
     if ( dict.count("spyserver") ) {
       spyserver_source_c_sptr src = make_spyserver_source_c( arg );
       block = src; iface = src.get();

@@ -24,6 +24,7 @@
 
 #include <thread>
 #include <atomic>
+#include <deque>
 #include <boost/circular_buffer.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
@@ -128,6 +129,15 @@ public:
   void set_biast( bool enabled );
   bool get_biast();
 
+  /*!
+   * Number of overflow events seen so far: messages whose samples did not
+   * fit into the internal FIFO ("O") plus gaps in the server's message
+   * sequence numbers ("Lost N frames"). Each event is also stamped into the
+   * sample stream as an "rx_overflow" tag (same key and value as the soapy
+   * backend), at the sample index where the gap begins.
+   */
+  unsigned long long get_overflow_count();
+
 private:
   static constexpr unsigned int BufferSize = 64 * 1024;
   const uint32_t ProtocolVersion = SPYSERVER_PROTOCOL_VERSION;
@@ -201,6 +211,21 @@ private:
   double _center_freq;
   double _gain;
   double _digitalGain;
+
+  // overflow bookkeeping: events are recorded by the receive thread (under
+  // _fifo_lock) at the stream position where samples are missing, and turned
+  // into rx_overflow tags by work()
+  std::atomic<unsigned long long> _overflow_count{0};
+  uint64_t _pushed_total = 0;            // samples pushed into the FIFO so far (under _fifo_lock)
+  std::deque<uint64_t> _overflow_pos;    // stream positions of gaps not yet tagged (under _fifo_lock)
+  uint64_t _last_tag_pos = 0;             // position of the last rx_overflow tag written by work()
+  bool _have_last_tag = false;
+  void note_overflow_locked();
+
+  // gain bookkeeping for log messages
+  double _requested_gain = -1;
+  int64_t _last_sync_gain = -1;
+  uint32_t _max_gain_index = 0;          // MaximumGainIndex reported by the server (0 = not known yet)
 };
 
 #endif /* INCLUDED_SPYSERVER_SOURCE_C_H */

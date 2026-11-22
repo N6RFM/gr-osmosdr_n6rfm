@@ -234,3 +234,39 @@ and the split-header case (depends on TCP segment boundaries).
 
 Files changed: `lib/spyserver/spyserver_source_c.cc`,
 `lib/spyserver/tcp_client.cc`, `lib/spyserver/tcp_client.h`
+
+## SpyServer: overflow counter and tags, gain range and logging, ForcedIQFormat warning, build guard
+
+- **`get_overflow_count()` and `rx_overflow` tags for SpyServer.** The receive
+  thread records the stream position of every FIFO overflow and every
+  sequence-number gap; `work()` stamps them into the stream as `rx_overflow`
+  tags (same key/value as the soapy backend). The count is the number of
+  events, not samples.
+  Events at the same stream position (a full FIFO dropping message after message)
+  are counted individually but tagged once; a gap at the very end of the stream is
+  only tagged if more samples follow.
+  Tested against a mock SpyServer (sequence gap: 1 event, tag at the exact sample
+  index; FIFO overflow: 678 events, 1 tag); not yet against a real SpyServer.
+- **`get_gain_range()`** now reports the server's `MaximumGainIndex` (21 for an
+  Airspy R2) once known, instead of a fixed 0-16 (falls back to 16 before the
+  device info arrives). `set_gain()` was never clamped to the reported range.
+- **Gain log.** `SpyServer: gain requested N` when `set_gain()` sends a
+  command; `SpyServer: server gain at connect: N` from the first client-sync
+  (and `server now reports gain N` if a later sync changes it). Tested against a
+  real SpyServer v2.0.1921: it sent no sync after a gain command and did not
+  answer a CMD_GET_SETTING probe, so the applied gain cannot be read back from
+  that server; verify it from the data level.
+- **`ForcedIQFormat` warning** at connect when the server forces a format.
+- **Device info log.** Three `SpyServer: device info ...` lines at connect: type, serial,
+  protocol version, max sample rate/bandwidth, decimation stages, gain stages, max gain
+  index, resolution, frequency range and forced IQ format, as sent by the server.
+- **Build guard.** The `spyserver` case in `source_impl.cc` was inside
+  `#ifdef ENABLE_AIRSPY`; it is now under `ENABLE_SPYSERVER`.
+- `SpyServer: Lost N frames` now ends with a newline, and `dropped_buffers` is
+  only incremented for real gaps (a negative gap, e.g. a repeated sequence
+  number, no longer decrements it).
+- **Not changed:** digital gain (`((uint32_t)gain) * 0xFFFFFFFF`). The protocol
+  header does not document the parameter, so it was left alone.
+
+Files changed: `lib/spyserver/spyserver_source_c.cc`, `lib/spyserver/spyserver_source_c.h`,
+`lib/source_impl.cc`, `README.md`, `CHANGES.md`

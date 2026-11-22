@@ -207,9 +207,22 @@ All messages go to stderr:
 | `SpyServer: Error on ThreadLoop: ...` | The receive thread died (for example the server closed the connection). |
 | `SpyServer: stream ended (connection lost or stopped)` | `work()` returned after the connection was lost or streaming stopped (see CHANGES.md). Before this fork the flowgraph hung silently here. |
 
-`get_overflow_count()` and the `rx_overflow` stream tags described above
-belong to the **soapy** backend only; they do not report anything for
-SpyServer.
+`get_overflow_count()` and the `rx_overflow` stream tags also work for
+SpyServer. An event is counted (and tagged) each time the internal buffer
+overflows (`O`) and each time a gap in the server's sequence numbers is
+seen (`Lost N frames`). The tag key and value are the same as the soapy
+backend's, so the Overflow Tag Monitor reads both; the tag sits at the
+sample index where the gap begins (for a sequence gap the number of
+missing samples is not known). Other messages: `SpyServer: device info: ...`
+(three lines at connect: device type, serial, server protocol version, max
+sample rate and bandwidth, decimation stages, gain stages and max gain
+index, resolution, frequency range, forced IQ format), `SpyServer: server gain
+at connect: N` (the server's own gain before this block sets one),
+`SpyServer: gain requested N` (what `set_gain()` sent; SpyServer
+v2.0.1921 does not confirm it: no status update followed the command and
+a get-setting request got no reply, so check the gain from the data), and
+`SpyServer: WARNING: the server forces IQ format ...` when
+`ForcedIQFormat` is non-zero.
 
 ### Not implemented
 

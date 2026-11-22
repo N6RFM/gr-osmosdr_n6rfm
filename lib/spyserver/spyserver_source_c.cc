@@ -383,9 +383,14 @@ void spyserver_source_c::parse_message(char *buffer, uint32_t len) {
         if (header.MessageType != MSG_TYPE_DEVICE_INFO && header.MessageType != MSG_TYPE_CLIENT_SYNC) {
           int32_t gap = header.SequenceNumber - last_sequence_number - 1;
           last_sequence_number = header.SequenceNumber;
-          dropped_buffers += gap;
           if (gap > 0) {
-            std::cerr << "SpyServer: Lost " << gap << " frames from SpyServer!";
+            dropped_buffers += gap;
+            {
+              // the gap sits between the samples pushed so far and this message's samples
+              boost::unique_lock<boost::mutex> lock(_fifo_lock);
+              note_overflow_locked();
+            }
+            std::cerr << "SpyServer: Lost " << gap << " frames from SpyServer!" << std::endl;
           }
         }
         handle_new_message();
@@ -508,6 +513,33 @@ void spyserver_source_c::process_device_info() {
   std::memcpy(&device_info, body_buffer, sizeof(DeviceInfo));
   minimum_tunable_frequency = device_info.MinimumFrequency;
   maximum_tunable_frequency = device_info.MaximumFrequency;
+  _max_gain_index = device_info.MaximumGainIndex;
+  std::cerr << "SpyServer: device info: type " << device_info.DeviceType
+            << ", serial " << device_info.DeviceSerial
+            << ", protocol " << ((header.ProtocolID >> 24) & 0xFF) << "." << ((header.ProtocolID >> 16) & 0xFF)
+            << "." << (header.ProtocolID & 0xFFFF) << "\n"
+            << "SpyServer:   max sample rate " << device_info.MaximumSampleRate
+            << ", max bandwidth " << device_info.MaximumBandwidth
+            << ", decimation stages " << device_info.DecimationStageCount
+            << " (min IQ decimation " << device_info.MinimumIQDecimation << ")\n"
+            << "SpyServer:   gain stages " << device_info.GainStageCount
+            << ", max gain index " << device_info.MaximumGainIndex
+            << ", resolution " << device_info.Resolution << " bits"
+            << ", frequency " << device_info.MinimumFrequency << " to " << device_info.MaximumFrequency << " Hz"
+            << ", forced IQ format " << device_info.ForcedIQFormat << std::endl;
+  if (device_info.ForcedIQFormat != 0) {
+    // this block always requests 16-bit IQ; the server may override it
+    const char *name = "unknown";
+    switch (device_info.ForcedIQFormat) {
+    case STREAM_FORMAT_UINT8: name = "8-bit (force_8bit = 1 in spyserver.config?)"; break;
+    case STREAM_FORMAT_INT16: name = "16-bit"; break;
+    case STREAM_FORMAT_INT24: name = "24-bit (not handled by this block)"; break;
+    case STREAM_FORMAT_FLOAT: name = "float"; break;
+    case STREAM_FORMAT_DINT4: name = "4-bit (not handled by this block)"; break;
+    }
+    std::cerr << "SpyServer: WARNING: the server forces IQ format " << device_info.ForcedIQFormat
+              << " = " << name << "; this block requested 16-bit" << std::endl;
+  }
   got_device_info = true;
 }
 
@@ -517,6 +549,14 @@ void spyserver_source_c::process_client_sync() {
 
   can_control = sync.CanControl != 0;
   _gain = (double) sync.Gain;
+  if ((int64_t)sync.Gain != _last_sync_gain) {
+    // SpyServer v2.0.1921 was observed NOT to send a sync after a gain command, so
+    // this normally prints once, at connect: the server's gain before we set ours
+    std::cerr << (_last_sync_gain < 0 ? "SpyServer: server gain at connect: "
+                                      : "SpyServer: server now reports gain ")
+              << sync.Gain << std::endl;
+    _last_sync_gain = (int64_t)sync.Gain;
+  }
   device_center_frequency = sync.DeviceCenterFrequency;
   channel_center_frequency = sync.IQCenterFrequency;
   _center_freq = (double) sync.IQCenterFrequency;
@@ -552,6 +592,9 @@ void spyserver_source_c::process_uint8_samples() {
     _fifo->push_back(gr_complex((*sample - 128.f) / 128.f, (*(sample+1) - 128.f) / 128.f));
     sample += 2;
   }
+  _pushed_total += to_copy;
+  if (to_copy < num_samples)
+    note_overflow_locked();
   _fifo_lock.unlock();
   if (to_copy) {
     _samp_avail.notify_one();
@@ -576,6 +619,9 @@ void spyserver_source_c::process_int16_samples() {
     _fifo->push_back(gr_complex(*sample / 32768.f, *(sample+1) / 32768.f));
     sample += 2;
   }
+  _pushed_total += to_copy;
+  if (to_copy < num_samples)
+    note_overflow_locked();
   _fifo_lock.unlock();
   if (to_copy) {
     _samp_avail.notify_one();
@@ -599,6 +645,9 @@ void spyserver_source_c::process_float_samples() {
     _fifo->push_back(gr_complex(*sample, *(sample+1)));
     sample += 2;
   }
+  _pushed_total += to_copy;
+  if (to_copy < num_samples)
+    note_overflow_locked();
   _fifo_lock.unlock();
   if (to_copy) {
     _samp_avail.notify_one();
@@ -686,6 +735,18 @@ bool spyserver_source_c::stop()
   return false;
 }
 
+void spyserver_source_c::note_overflow_locked()
+{
+  // caller holds _fifo_lock: the gap begins after the _pushed_total samples delivered so far
+  _overflow_count++;
+  _overflow_pos.push_back(_pushed_total);
+}
+
+unsigned long long spyserver_source_c::get_overflow_count()
+{
+  return _overflow_count;
+}
+
 int spyserver_source_c::work( int noutput_items,
                         gr_vector_const_void_star &input_items,
                         gr_vector_void_star &output_items )
@@ -712,6 +773,23 @@ int spyserver_source_c::work( int noutput_items,
   for(int i = 0; i < noutput_items; ++i) {
     out[i] = _fifo->at(0);
     _fifo->pop_front();
+  }
+
+  // stamp each gap into the stream at the sample index where it begins (same
+  // tag as the soapy backend); gaps exactly at the end of this block go out
+  // with the next call
+  const uint64_t first = nitems_written(0);
+  while (!_overflow_pos.empty() && _overflow_pos.front() < first + (uint64_t)noutput_items) {
+    uint64_t pos = _overflow_pos.front();
+    _overflow_pos.pop_front();
+    if (pos < first) pos = first;
+    // several events at the same stream position (a full FIFO drops message after
+    // message) are counted individually but tagged once
+    if (!_have_last_tag || pos != _last_tag_pos) {
+      add_item_tag(0, pos, pmt::intern("rx_overflow"), pmt::PMT_T, pmt::intern(alias()));
+      _last_tag_pos = pos;
+      _have_last_tag = true;
+    }
   }
 
   //std::cerr << "-" << std::flush;
@@ -788,7 +866,8 @@ std::vector<std::string> spyserver_source_c::get_gain_names( size_t chan )
 
 osmosdr::gain_range_t spyserver_source_c::get_gain_range( size_t chan )
 {
-  return osmosdr::gain_range_t( 0, 16, 1 );
+  // the server reports its maximum gain index (21 for an Airspy R2); fall back to 16 until it is known
+  return osmosdr::gain_range_t( 0, _max_gain_index ? _max_gain_index : 16, 1 );
 }
 
 osmosdr::gain_range_t spyserver_source_c::get_gain_range( const std::string & name, size_t chan )
@@ -813,6 +892,8 @@ double spyserver_source_c::set_gain( double gain, size_t chan )
 {
   if (can_control) {
     _gain = gain;
+    _requested_gain = gain;
+    std::cerr << "SpyServer: gain requested " << (uint32_t)gain << " (SpyServer v2.0.1921 does not confirm it)" << std::endl;
     set_setting(SETTING_GAIN, {(uint32_t)gain});
   } else {
     std::cerr << "Spyserver: The server does not allow you to change the gains." << std::endl;
